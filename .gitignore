@@ -1,0 +1,14 @@
+.gradle/
+.idea/
+**/build/
+local.properties
+*.iml
+codec/src/main/jniLibs/
+codec/src/main/ffmpeg-include/
+work/
+*.aar
+.DS_Store
+codec/.cxx/
+**/__pycache__/
+*.pyc
+releases/*.zip

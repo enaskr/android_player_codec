@@ -1,0 +1,67 @@
+{
+  "aar": "codec-release.aar",
+  "abis": {
+    "arm64-v8a": {
+      "avutil": {
+        "bytes": 740784,
+        "pt_load_alignment": [
+          16384,
+          16384,
+          16384,
+          16384
+        ]
+      },
+      "swresample": {
+        "bytes": 97960,
+        "pt_load_alignment": [
+          16384,
+          16384,
+          16384
+        ]
+      },
+      "swscale": {
+        "bytes": 1242520,
+        "pt_load_alignment": [
+          16384,
+          16384,
+          16384,
+          16384
+        ]
+      },
+      "avcodec": {
+        "bytes": 11078952,
+        "pt_load_alignment": [
+          16384,
+          16384,
+          16384,
+          16384
+        ]
+      },
+      "avformat": {
+        "bytes": 1543592,
+        "pt_load_alignment": [
+          16384,
+          16384,
+          16384,
+          16384
+        ]
+      },
+      "android_player_codec": {
+        "bytes": 17640,
+        "pt_load_alignment": [
+          16384,
+          16384
+        ]
+      }
+    }
+  },
+  "verified_abis": [
+    "arm64-v8a"
+  ],
+  "required_java_api": [
+    "CodecPack",
+    "CodecSession",
+    "CodecCatalog",
+    "CodecInfo"
+  ]
+}
