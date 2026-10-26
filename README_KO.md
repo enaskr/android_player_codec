@@ -15,6 +15,19 @@ Android 플레이어에 Gradle 의존성으로 포함하는 **코덱 확장 AAR*
 
 **주의:** 모든 코덱이 모든 기기에서 실행된다고 보증할 수 없습니다. 하드웨어 코덱은 기기에 따라 달라지고, FFmpeg 기본 구성에서 지원되지 않는 외부 상용 라이브러리·코덱은 포함하지 않습니다. DRM 복호화 기능은 제공하지 않습니다.
 
+## 매일 05:00 자동 업데이트 확인
+
+GitHub Actions에서 **매일 한국시간(KST) 오전 05:00**에 FFmpeg 업데이트 여부를 확인합니다. GitHub Actions cron 설정은 전날 UTC 20:00인 0 20 * * *입니다. GitHub 서버 사정에 따라 실제 실행 시각은 지연될 수 있습니다.
+
+1. FFmpeg 공식 Git 태그를 확인하고 nX.Y 또는 nX.Y.Z 형식의 최신 정식 버전을 찾습니다. RC·베타·개발 버전은 제외합니다.
+2. 해당 버전의 GitHub Release에 AAR, SHA-256, 검증 보고서, 빌드 정보, FFmpeg 소스가 모두 존재하는지 검사합니다.
+3. 이미 정상 배포된 버전이면 **코덱 컴파일·AAR 빌드·Release 배포를 모두 생략**하고 확인 단계만 성공 처리합니다.
+4. 새로운 정식 버전이거나 필수 배포 파일이 없으면 4개 ABI를 컴파일하고 JNI/16 KiB ELF 검증에 성공한 경우에만 Release를 게시합니다. 실패한 경우 다음 실행에서 재시도합니다.
+
+플레이어 및 네이티브 빌드 소스가 변경된 Push는 해당 FFmpeg 버전을 다시 빌드합니다. README 또는 일정 설정만 변경된 경우에는 기존 배포본을 재빌드하지 않습니다. Actions의 Run workflow 메뉴에서는 release_tag와 force=true로 특정 버전을 강제 재빌드할 수 있습니다.
+
+원본 태그 또는 GitHub Release 정보를 조회하지 못하면 빌드를 시작하지 않고 오류를 기록합니다. 생성된 AAR을 사용하려면 Android 플레이어를 다시 빌드해야 합니다.
+
 ## 설치 및 연동
 
 [검증된 4개 ABI 통합 AAR 다운로드](https://github.com/enaskr/android_player_codec/releases/download/codec-v0.1.0-ffmpeg9.0.2/android-player-codec-0.1.0-ffmpeg9.0.2.aar) · [SHA-256](https://github.com/enaskr/android_player_codec/releases/download/codec-v0.1.0-ffmpeg9.0.2/SHA256SUMS) · [검증 결과](https://github.com/enaskr/android_player_codec/releases/download/codec-v0.1.0-ffmpeg9.0.2/VERIFICATION.json)
