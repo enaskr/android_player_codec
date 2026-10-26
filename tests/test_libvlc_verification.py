@@ -78,6 +78,15 @@ class LibVlcVerifierTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "non-16KiB"):
                 libvlc.verify(path)
 
+    def test_official_style_32bit_4k_is_reported_not_rejected(self):
+        from verify_shared_libs import MACHINES
+        with tempfile.TemporaryDirectory() as folder:
+            path = aar_file(Path(folder), MACHINES, bad_abi="armeabi-v7a")
+            report = libvlc.verify(path)
+        self.assertFalse(report["abis"]["armeabi-v7a"]["all_elf_16k_aligned"])
+        self.assertTrue(report["abis"]["arm64-v8a"]["all_elf_16k_aligned"])
+        self.assertEqual(report["strict_16k_abis"], ["arm64-v8a"])
+
     def test_native_name_collision_is_rejected(self):
         from verify_shared_libs import MACHINES
         with tempfile.TemporaryDirectory() as folder:

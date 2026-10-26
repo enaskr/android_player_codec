@@ -138,7 +138,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/vendor_libvlc.py --version "$LIBVLC_VERSION" --output vendor
-      - name: Verify four ABIs, Java API, and 16 KiB ELF
+      - name: Verify four ABI architectures and ARM64 16 KiB ELF
         run: |
           python3 scripts/verify_libvlc.py "vendor/libvlc-all-${LIBVLC_VERSION}.aar" vendor/LIBVLC_VERIFICATION.json
       - uses: actions/upload-artifact@v4
@@ -264,5 +264,5 @@ jobs:
           else
             gh release create "$tag" dist/* \
               --title "Android Codec ${CODEC_VERSION} / FFmpeg ${FFMPEG_VERSION} / LibVLC ${LIBVLC_VERSION}" \
-              --notes 'Two-AAR codec bundle: FFmpeg AAR compiled on GitHub-hosted runners, official VideoLAN LibVLC AAR retrieved unchanged from Maven Central and checksum-verified. All four ABIs and 16 KiB ELF checked; FFmpeg source, LibVLC POM/provenance and SHA256 included. Not a merged AAR or independently installable APK. LGPL and third-party licensing applies; no DRM guarantee.'
+              --notes 'Two-AAR codec bundle: FFmpeg AAR compiled on GitHub-hosted runners, official VideoLAN LibVLC AAR retrieved unchanged from Maven Central and checksum-verified. Four ABI presence/architecture checks; strict 16 KiB on FFmpeg and LibVLC ARM64; FFmpeg source, LibVLC POM/provenance and SHA256 included. Not a merged AAR or independently installable APK. LGPL and third-party licensing applies; no DRM guarantee.'
           fi
