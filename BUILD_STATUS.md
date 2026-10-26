@@ -7,5 +7,8 @@
 - Output: releases/android-player-codec-v0.1.0-ffmpeg9.0.2-arm64-v8a.aar
 - SHA-256: 74e714f24374c648fa207f9a7f8fe007fc4dd05c8ce0778a614ccb4ec8462b25
 - Device playback test: NOT RUN.
-- Other ABIs: GitHub Actions is configured; not locally compiled or verified.
-- GitHub repository: enaskr/android_player_codec (repository exists). CI and multi-ABI Release verification pending GitHub Actions run.
+- Four-ABI GitHub Actions build: PASS (arm64-v8a, armeabi-v7a, x86, x86_64), including packaged AAR JNI/Java/16 KiB ELF checks.
+- GitHub Release: https://github.com/enaskr/android_player_codec/releases/tag/codec-v0.1.0-ffmpeg9.0.2 (published 2026-10-26).
+- AAR artifact: android-player-codec-0.1.0-ffmpeg9.0.2.aar (29,412,803 bytes), SHA-256 check passed after downloading to Synology.
+- CI build: https://github.com/enaskr/android_player_codec/actions/runs/40293648515 (success).
+- Synology verified copy: releases/codec-v0.1.0-ffmpeg9.0.2/ (all 4 ABIs pass standalone verifier).
