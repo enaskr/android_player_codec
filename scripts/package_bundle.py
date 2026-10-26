@@ -80,12 +80,12 @@ def create_bundle(dist: Path, codec: str, ffmpeg: str, libvlc: str) -> Path:
         codec_name, vlc_name, pom_name, "LIBVLC_PROVENANCE.json",
         "README-BUNDLE.md", "BUILD_INFO.txt", "VERIFICATION.json",
     ]
+    readme = bundle_readme(codec, ffmpeg, libvlc)
+    (dist / "README-BUNDLE.md").write_text(readme, encoding="utf-8")
     for name in files:
         path = dist / name
         if not path.is_file() or path.stat().st_size == 0:
             raise ValueError(f"Missing bundle input: {path}")
-    readme = bundle_readme(codec, ffmpeg, libvlc)
-    (dist / "README-BUNDLE.md").write_text(readme, encoding="utf-8")
     # Check required AARs before distributing files to other applications.
     for name in (codec_name, vlc_name):
         with zipfile.ZipFile(dist / name) as aar:
