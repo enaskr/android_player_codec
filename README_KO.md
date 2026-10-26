@@ -2,6 +2,10 @@
 
 ## LibVLC 공식 AAR 함께 제공
 
+**GitHub 배포 및 검증 성공:** [FFmpeg + LibVLC 통합 ZIP 다운로드](https://github.com/enaskr/android_player_codec/releases/download/codec-v0.2.0-ffmpeg9.0.2-libvlc3.7.7/android-player-codec-bundle-0.2.0-ffmpeg9.0.2-libvlc3.7.7.zip) · [Release](https://github.com/enaskr/android_player_codec/releases/tag/codec-v0.2.0-ffmpeg9.0.2-libvlc3.7.7) · [검증 보고서](https://github.com/enaskr/android_player_codec/releases/download/codec-v0.2.0-ffmpeg9.0.2-libvlc3.7.7/VERIFICATION.json)
+
+LibVLC 3.7.7의 ARM64 및 x86_64 네이티브 라이브러리는 16 KiB ELF 정렬을 통과했습니다. 공식 upstream의 armeabi-v7a와 x86은 4 KiB ELF 세그먼트를 포함하므로 16 KiB 페이지 크기 호환성을 보장하지 않습니다. 실제 Android 기기 재생 테스트는 아직 수행되지 않았습니다.
+
 Android Player Codec 0.2.0부터 FFmpeg AAR과 함께 **VideoLAN 공식 LibVLC AAR**을 배포하는 구조를 추가했습니다. LibVLC 3.7.7(안정 버전)을 Maven Central에서 가져와 Maven 공식 SHA-1을 대조하고 SHA-256을 별도 기록하며, 네이티브 4개 ABI를 확인하되 ARM64만 16 KiB ELF 정렬을 필수 검사하고, **FFmpeg AAR + LibVLC AAR을 하나의 ZIP 번들**로 제공합니다.
 
 LibVLC 자체를 이 프로젝트에서 소스 컴파일하지는 않습니다. VideoLAN의 공식 사전 빌드 AAR을 검증한 뒤 변경하지 않고 배포합니다. 대신 FFmpeg 소스 빌드, LibVLC 검증, AAR 생성, ZIP 패키징과 Release 게시 등 **이 프로젝트의 모든 빌드 작업은 GitHub-hosted Actions에서만 실행**합니다. Synology, 개인 서버 또는 self-hosted runner를 사용하지 않습니다.
