@@ -14,6 +14,9 @@ Android playback SDK packaged as an **AAR** (not a standalone APK). It exposes:
 
 ## AAR integration
 
+[Download verified 4-ABI AAR](https://github.com/enaskr/android_player_codec/releases/download/codec-v0.1.0-ffmpeg9.0.2/android-player-codec-0.1.0-ffmpeg9.0.2.aar) · [SHA-256](https://github.com/enaskr/android_player_codec/releases/download/codec-v0.1.0-ffmpeg9.0.2/SHA256SUMS) · [Verification report](https://github.com/enaskr/android_player_codec/releases/download/codec-v0.1.0-ffmpeg9.0.2/VERIFICATION.json)
+
+
 Download the verified `.aar` from GitHub Actions or Releases and place it in your Android player module under `app/libs/`:
 
 ```kotlin
@@ -99,4 +102,4 @@ The Java/JNI glue in this repository is Apache-2.0; FFmpeg retains its own LGPL 
 
 FFmpeg's own guidance: https://ffmpeg.org/legal.html . Dolby, DTS, HEVC, AV1 and other formats may have patent, trademark, hardware, or distribution terms separate from FFmpeg's LGPL. This is not legal advice. Codec availability is not a guarantee of licensing clearance. FFmpeg releases should be tracked and rebuilt for security updates.
 
-The local **arm64-v8a** AAR has passed build and native ELF/JNI checks. Multi-ABI GitHub Actions verification and decoding on a representative Android device remain outstanding. Native crashes, non-seekable streams, unusual frame layouts, codecs requiring external libraries, and DRM are explicit gaps to test before production.
+**Release status:** The [FFmpeg 9.0.2 / Codec SDK 0.1.0](https://github.com/enaskr/android_player_codec/releases/tag/codec-v0.1.0-ffmpeg9.0.2) AAR was built and independently verified for all four Android ABIs, including Java/JNI symbols and 16 KiB ELF load-segment alignment. Runtime decoding on representative Android devices is **not yet verified**. Native crashes, non-seekable streams, unusual frame layouts, codecs requiring external libraries, and DRM are explicit gaps to test before production.
