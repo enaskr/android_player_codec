@@ -1,5 +1,14 @@
 # Android Player Codec AAR
 
+## LibVLC 공식 AAR 함께 제공
+
+Android Player Codec 0.2.0부터 FFmpeg AAR과 함께 **VideoLAN 공식 LibVLC AAR**을 배포하는 구조를 추가했습니다. LibVLC 3.7.7(안정 버전)을 Maven Central에서 가져와 원본 SHA-256, 네이티브 ABI 및 16 KiB ELF 정렬을 검증하고, **FFmpeg AAR + LibVLC AAR을 하나의 ZIP 번들**로 제공합니다.
+
+LibVLC 자체를 이 프로젝트에서 소스 컴파일하지는 않습니다. VideoLAN의 공식 사전 빌드 AAR을 검증한 뒤 변경하지 않고 배포합니다. 대신 FFmpeg 소스 빌드, LibVLC 검증, AAR 생성, ZIP 패키징과 Release 게시 등 **이 프로젝트의 모든 빌드 작업은 GitHub-hosted Actions에서만 실행**합니다. Synology, 개인 서버 또는 self-hosted runner를 사용하지 않습니다.
+
+[LibVLC 연동 가이드](docs/LIBVLC_INTEGRATION.md). 권장 Gradle 사용법은 FFmpeg 로컬 AAR과 implementation("org.videolan.android:libvlc-all:3.7.7")을 선언하는 방식입니다. 오프라인용 LibVLC AAR도 ZIP에 함께 제공하지만, AndroidX 등의 전이 의존성은 동봉 POM을 참고해 직접 추가해야 합니다.
+
+
 Android 플레이어에 Gradle 의존성으로 포함하는 **코덱 확장 AAR** 프로젝트입니다. APK를 설치하는 방식은 아닙니다.
 
 ## 제공 기능
@@ -17,14 +26,14 @@ Android 플레이어에 Gradle 의존성으로 포함하는 **코덱 확장 AAR*
 
 ## 매일 05:00 자동 업데이트 확인
 
-GitHub Actions에서 **매일 한국시간(KST) 오전 05:00**에 FFmpeg 업데이트 여부를 확인합니다. GitHub Actions cron 설정은 전날 UTC 20:00인 0 20 * * *입니다. GitHub 서버 사정에 따라 실제 실행 시각은 지연될 수 있습니다.
+GitHub Actions에서 **매일 한국시간(KST) 오전 05:00**에 FFmpeg와 LibVLC의 최신 안정 버전을 함께 확인합니다. GitHub Actions cron 설정은 전날 UTC 20:00인 0 20 * * *입니다. GitHub 서버 사정에 따라 실제 실행 시각은 지연될 수 있습니다.
 
-1. FFmpeg 공식 Git 태그를 확인하고 nX.Y 또는 nX.Y.Z 형식의 최신 정식 버전을 찾습니다. RC·베타·개발 버전은 제외합니다.
-2. 해당 버전의 GitHub Release에 AAR, SHA-256, 검증 보고서, 빌드 정보, FFmpeg 소스가 모두 존재하는지 검사합니다.
-3. 이미 정상 배포된 버전이면 **코덱 컴파일·AAR 빌드·Release 배포를 모두 생략**하고 확인 단계만 성공 처리합니다.
+1. FFmpeg 공식 Git 태그 및 LibVLC Maven Central 메타데이터에서 각각 최신 정식 버전을 찾습니다. FFmpeg RC·베타와 LibVLC EAP·RC 등 시험 버전은 제외합니다.
+2. 두 버전 조합에 해당하는 Release에 FFmpeg AAR, LibVLC 공식 AAR/POM, 통합 ZIP, SHA-256, 검증 보고서, 소스 정보가 모두 존재하는지 검사합니다.
+3. 동일한 FFmpeg·LibVLC 조합이 정상 배포됐으면 **코덱 컴파일·AAR 빌드·Release 배포를 모두 생략**하고 확인 단계만 성공 처리합니다.
 4. 새로운 정식 버전이거나 필수 배포 파일이 없으면 4개 ABI를 컴파일하고 JNI/16 KiB ELF 검증에 성공한 경우에만 Release를 게시합니다. 실패한 경우 다음 실행에서 재시도합니다.
 
-플레이어 및 네이티브 빌드 소스가 변경된 Push는 해당 FFmpeg 버전을 다시 빌드합니다. README 또는 일정 설정만 변경된 경우에는 기존 배포본을 재빌드하지 않습니다. Actions의 Run workflow 메뉴에서는 release_tag와 force=true로 특정 버전을 강제 재빌드할 수 있습니다.
+플레이어 및 네이티브 빌드 소스가 변경된 Push는 해당 FFmpeg 버전을 다시 빌드합니다. README 또는 일정 설정만 변경된 경우에는 기존 배포본을 재빌드하지 않습니다. Actions의 Run workflow 메뉴에서는 release_tag(FFmpeg), libvlc_version(LibVLC), force=true로 특정 버전 조합을 강제 재빌드할 수 있습니다.
 
 원본 태그 또는 GitHub Release 정보를 조회하지 못하면 빌드를 시작하지 않고 오류를 기록합니다. 생성된 AAR을 사용하려면 Android 플레이어를 다시 빌드해야 합니다.
 
