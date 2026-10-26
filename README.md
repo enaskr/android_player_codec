@@ -8,9 +8,22 @@ Android playback SDK packaged as an **AAR** (not a standalone APK). It exposes:
 - FFmpeg **9.0.2** software decoders and demuxers bundled inside the AAR as separately linkable LGPL shared native libraries (`libavcodec`, `libavformat`, `libavutil`, `libswresample`, `libswscale`). External and patent-encumbered libraries are **not** enabled.
 - An Android Java API to inspect the actual compiled FFmpeg decoders, open a local `File` or `content://` URI via file descriptor, read **PCM16 48 kHz stereo audio** in bounded chunks, and decode **RGBA8888 video frames** with presentation timestamps.
 - ABI build scripts for `arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64`, and 16 KiB native `PT_LOAD` alignment checks.
-- GitHub Actions which builds the native libraries from pinned FFmpeg source, assembles the AAR, verifies its Java/JNI symbols and native libraries, uploads artifacts, and on successful push or manual runs publishes a versioned GitHub Release including FFmpeg sources.
+- GitHub Actions that checks upstream FFmpeg releases every day at **05:00 KST**, builds only when an unpublished stable tag exists or the builder changes, verifies the AAR, and publishes the FFmpeg source with the AAR.
 
 **Important:** This project does **not** guarantee every possible media codec or format will work on every device. Capabilities depend on the Android device, the actual FFmpeg build configuration and codec licensing. Hardware/secure codecs are not implemented by FFmpeg and DRM-protected playback is out of scope. Video in RGBA output is CPU-intensive; the app should prefer Android `MediaCodec` for supported hardware formats.
+
+## Automatic update schedule
+
+GitHub Actions performs a **lightweight update check at 05:00 every day in Asia/Seoul**. The schedule is UTC 20:00 on the preceding date (cron: 0 20 * * *). Scheduled jobs can start later if GitHub Actions is congested.
+
+1. Query upstream FFmpeg git tags, accept only numbered stable nX.Y or nX.Y.Z releases (exclude RC/beta/development tags), and select the highest semantic version.
+2. Compare the target GitHub Release with the required AAR, verification report, SHA-256 file, build information, and corresponding FFmpeg source.
+3. If the matching Release is already complete, **skip all four native builds, AAR packaging, and publishing**. The update-check job alone succeeds and records SKIP.
+4. Otherwise build and verify arm64-v8a, armeabi-v7a, x86 and x86_64 and publish the new Release. Failed checks block publication and are retried at the next scheduled check.
+
+A push that changes actual codec sources, native build scripts or Gradle build inputs rebuilds the existing upstream version. README and workflow-only changes are skipped when the latest Release is already complete. Manual workflow runs allow an optional FFmpeg release_tag and force=true to rebuild an existing version.
+
+Detection errors do not silently trigger an expensive build: upstream Git or GitHub Release API failures stop the check. A new AAR still requires recompiling the consuming Android player app; this is not a hot-installable plugin.
 
 ## AAR integration
 
