@@ -12,7 +12,7 @@ containing the two unmodified, independently consumable AARs plus a Maven POM,
 checksum provenance and integration instructions.
 
 LibVLC itself is **not compiled from source in this project**: GitHub Actions
-downloads VideoLAN's published AAR, checks its Maven SHA-256, verifies Java/native
+downloads VideoLAN's published AAR, checks its official Maven checksum (SHA-1 for 3.7.7), records SHA-256, verifies Java/native
 ABIs and 16 KiB ELF alignment, and distributes it unchanged. **All project
 builds, tests, packaging and publishing run exclusively on GitHub-hosted
 runners**; no NAS/remote build server is used.
