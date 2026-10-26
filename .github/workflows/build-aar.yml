@@ -2,6 +2,19 @@ name: Build Android Player Codec AAR (FFmpeg)
 
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Optional FFmpeg stable release tag (e.g. n9.0.2). Empty = newest.'
+        required: false
+        type: string
+      force:
+        description: 'Rebuild and replace the existing Release assets'
+        required: false
+        default: false
+        type: boolean
+  # 05:00 KST = 20:00 UTC on the previous calendar day.
+  schedule:
+    - cron: '0 20 * * *'
   push:
     branches: [main]
     paths:
@@ -19,12 +32,38 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  FFMPEG_VERSION: '9.0.2'
+  FFMPEG_BASELINE_VERSION: '9.0.2'
   NDK_VERSION: '28.2.13676358'
   CODEC_VERSION: '0.1.0'
 
 jobs:
+  resolve:
+    name: Check newest FFmpeg stable tag and existing Release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    outputs:
+      build: ${{ steps.check.outputs.build }}
+      ffmpeg_version: ${{ steps.check.outputs.ffmpeg_version }}
+      release_tag: ${{ steps.check.outputs.release_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Test version comparator and no-op policy
+        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Resolve latest FFmpeg and decide whether to build
+        id: check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          INPUT_RELEASE_TAG: ${{ inputs.release_tag }}
+          FORCE_BUILD: ${{ inputs.force || 'false' }}
+          GITHUB_EVENT_BEFORE: ${{ github.event.before }}
+        run: python3 scripts/resolve_release.py
   build-native:
+    needs: [resolve]
+    if: needs.resolve.outputs.build == 'true'
+    env:
+      FFMPEG_VERSION: ${{ needs.resolve.outputs.ffmpeg_version }}
     name: FFmpeg ${{ matrix.abi }}
     strategy:
       fail-fast: false
@@ -62,7 +101,7 @@ jobs:
       - name: Build FFmpeg decoder libraries
         env:
           BUILD_JOBS: '2'
-        run: bash scripts/build_ffmpeg.sh "${{ matrix.abi }}"
+        run: FFMPEG_SOURCE_DIR="$PWD/work/ffmpeg-$FFMPEG_VERSION" bash scripts/build_ffmpeg.sh "${{ matrix.abi }}"
       - name: Upload ABI native libraries
         uses: actions/upload-artifact@v4
         with:
@@ -80,7 +119,10 @@ jobs:
           if-no-files-found: error
   aar:
     name: Package, verify, and upload AAR
-    needs: [build-native]
+    needs: [resolve, build-native]
+    if: needs.resolve.outputs.build == 'true'
+    env:
+      FFMPEG_VERSION: ${{ needs.resolve.outputs.ffmpeg_version }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -137,8 +179,10 @@ jobs:
           retention-days: 30
   publish:
     name: Publish verified AAR
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
-    needs: [aar]
+    if: needs.resolve.outputs.build == 'true'
+    needs: [resolve, aar]
+    env:
+      FFMPEG_VERSION: ${{ needs.resolve.outputs.ffmpeg_version }}
     runs-on: ubuntu-24.04
     permissions:
       contents: write
