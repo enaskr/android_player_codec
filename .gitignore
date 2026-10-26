@@ -12,3 +12,4 @@ codec/.cxx/
 **/__pycache__/
 *.pyc
 releases/*.zip
+releases/codec-*/
