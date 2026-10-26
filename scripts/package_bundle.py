@@ -23,7 +23,7 @@ Versions: Codec SDK {codec}; LGPL FFmpeg {ffmpeg}; VideoLAN LibVLC {libvlc}.
 This is a DISTRIBUTION BUNDLE containing TWO AARs, not a single merged AAR.
 The codec SDK is compiled from FFmpeg sources on GitHub Actions runners;
 the official VideoLAN LibVLC AAR is downloaded unchanged from Maven Central
-and SHA-256 verified inside the same GitHub Actions run.
+and verified against Maven's published checksum (SHA-1 for 3.7.7);\na separate SHA-256 is recorded inside GitHub Actions.
 
 ## Recommended player Gradle configuration
 
