@@ -17,6 +17,9 @@ Android 플레이어에 Gradle 의존성으로 포함하는 **코덱 확장 AAR*
 
 ## 설치 및 연동
 
+[검증된 4개 ABI 통합 AAR 다운로드](https://github.com/enaskr/android_player_codec/releases/download/codec-v0.1.0-ffmpeg9.0.2/android-player-codec-0.1.0-ffmpeg9.0.2.aar) · [SHA-256](https://github.com/enaskr/android_player_codec/releases/download/codec-v0.1.0-ffmpeg9.0.2/SHA256SUMS) · [검증 결과](https://github.com/enaskr/android_player_codec/releases/download/codec-v0.1.0-ffmpeg9.0.2/VERIFICATION.json)
+
+
 플레이어 모듈의 `app/libs/` 폴더에 빌드된 AAR을 넣고 다음을 Gradle에 선언합니다.
 
 ```kotlin
@@ -78,4 +81,4 @@ python3 scripts/verify_aar.py codec/build/outputs/aar/codec-release.aar
 
 공식 라이선스 문서: https://ffmpeg.org/legal.html
 
-본 프로젝트는 FFmpeg 기반 소프트웨어 디코딩 기능과 Android 코덱 탐색 기능을 제공하며, **상업용 코덱에 필요한 특허 라이선스, DRM 또는 모든 기기에 대한 호환성을 보장하지 않습니다.** ARM64용 AAR의 로컬 빌드와 JNI/ELF 정렬 검증은 성공했지만, 4개 ABI의 GitHub Actions 빌드와 실기기 디코딩·메모리·성능 검증은 별도 확인이 필요합니다.
+본 프로젝트는 FFmpeg 기반 소프트웨어 디코딩 기능과 Android 코덱 탐색 기능을 제공하며, **상업용 코덱에 필요한 특허 라이선스, DRM 또는 모든 기기에 대한 호환성을 보장하지 않습니다.** **4개 ABI 통합 AAR의 GitHub Actions 빌드와 JNI·16 KiB ELF 정렬 검증이 모두 성공했습니다.** 다만 실제 Android 기기의 디코딩 동작, 메모리 사용량과 재생 성능은 아직 검증되지 않았습니다.
