@@ -138,7 +138,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/vendor_libvlc.py --version "$LIBVLC_VERSION" --output vendor
-      - name: Verify four ABIs, Java API, and 16 KiB ELF
+      - name: Verify four ABI architectures and ARM64 16 KiB ELF
         run: |
           python3 scripts/verify_libvlc.py "vendor/libvlc-all-${LIBVLC_VERSION}.aar" vendor/LIBVLC_VERIFICATION.json
       - uses: actions/upload-artifact@v4
