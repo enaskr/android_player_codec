@@ -18,7 +18,7 @@ def verify(path: pathlib.Path, abis: tuple[str, ...] | None = None) -> dict:
             raise ValueError(f"AAR corruption: {bad}")
         names = set(aar.namelist())
         with zipfile.ZipFile(io.BytesIO(aar.read("classes.jar"))) as classes:
-            for klass in ("CodecPack", "CodecSession", "CodecCatalog", "CodecInfo"):
+            for klass in ("CodecPack", "CodecSession", "CodecCatalog", "CodecInfo", "CodecBackends"):
                 name = f"com/enaskr/player/codec/{klass}.class"
                 if name not in classes.namelist():
                     raise ValueError(f"AAR missing {name}")
@@ -26,7 +26,7 @@ def verify(path: pathlib.Path, abis: tuple[str, ...] | None = None) -> dict:
         if not target_abis or any(abi not in MACHINES for abi in target_abis):
             raise ValueError(f"Invalid ABI list: {target_abis}")
         report = {"aar": path.name, "abis": {}, "verified_abis": list(target_abis), "required_java_api": [
-            "CodecPack", "CodecSession", "CodecCatalog", "CodecInfo"]}
+            "CodecPack", "CodecSession", "CodecCatalog", "CodecInfo", "CodecBackends"]}
         with tempfile.TemporaryDirectory() as temp:
             root = pathlib.Path(temp)
             for abi in target_abis:
