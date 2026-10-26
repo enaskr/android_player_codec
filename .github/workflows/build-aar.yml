@@ -264,5 +264,5 @@ jobs:
           else
             gh release create "$tag" dist/* \
               --title "Android Codec ${CODEC_VERSION} / FFmpeg ${FFMPEG_VERSION} / LibVLC ${LIBVLC_VERSION}" \
-              --notes 'Two-AAR codec bundle: FFmpeg AAR compiled on GitHub-hosted runners, official VideoLAN LibVLC AAR retrieved unchanged from Maven Central and checksum-verified. All four ABIs and 16 KiB ELF checked; FFmpeg source, LibVLC POM/provenance and SHA256 included. Not a merged AAR or independently installable APK. LGPL and third-party licensing applies; no DRM guarantee.'
+              --notes 'Two-AAR codec bundle: FFmpeg AAR compiled on GitHub-hosted runners, official VideoLAN LibVLC AAR retrieved unchanged from Maven Central and checksum-verified. Four ABI presence/architecture checks; strict 16 KiB on FFmpeg and LibVLC ARM64; FFmpeg source, LibVLC POM/provenance and SHA256 included. Not a merged AAR or independently installable APK. LGPL and third-party licensing applies; no DRM guarantee.'
           fi
