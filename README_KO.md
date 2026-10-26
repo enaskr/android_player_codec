@@ -11,7 +11,7 @@ Android 플레이어에 Gradle 의존성으로 포함하는 **코덱 확장 AAR*
 - 오디오: PCM16, 48 kHz, 스테레오 출력 및 구간 이동
 - 비디오: RGBA8888 프레임과 마이크로초 단위 타임스탬프 출력 및 구간 이동
 - Android의 `arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64`를 대상으로 빌드 및 16 KiB ELF 정렬 검증
-- GitHub Actions에서 FFmpeg 소스 컴파일 → AAR 빌드 → JNI/ABI 검증 → 산출물 업로드 → 수동 실행 시 Release 게시
+- GitHub Actions에서 FFmpeg 소스 컴파일 → AAR 빌드 → JNI/ABI 검증 → 산출물 업로드 → 검증 성공 시 Release 게시
 
 **주의:** 모든 코덱이 모든 기기에서 실행된다고 보증할 수 없습니다. 하드웨어 코덱은 기기에 따라 달라지고, FFmpeg 기본 구성에서 지원되지 않는 외부 상용 라이브러리·코덱은 포함하지 않습니다. DRM 복호화 기능은 제공하지 않습니다.
 
@@ -78,4 +78,4 @@ python3 scripts/verify_aar.py codec/build/outputs/aar/codec-release.aar
 
 공식 라이선스 문서: https://ffmpeg.org/legal.html
 
-본 프로젝트는 FFmpeg 기반 소프트웨어 디코딩 기능과 Android 코덱 탐색 기능을 제공하며, **상업용 코덱에 필요한 특허 라이선스, DRM 또는 모든 기기에 대한 호환성을 보장하지 않습니다.** 실제 AAR 빌드 및 기기에서의 디코딩·메모리·성능 검증 후 운영에 적용해야 합니다.
+본 프로젝트는 FFmpeg 기반 소프트웨어 디코딩 기능과 Android 코덱 탐색 기능을 제공하며, **상업용 코덱에 필요한 특허 라이선스, DRM 또는 모든 기기에 대한 호환성을 보장하지 않습니다.** ARM64용 AAR의 로컬 빌드와 JNI/ELF 정렬 검증은 성공했지만, 4개 ABI의 GitHub Actions 빌드와 실기기 디코딩·메모리·성능 검증은 별도 확인이 필요합니다.
