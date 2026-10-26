@@ -2,6 +2,29 @@
 
 [한국어 설명서](README_KO.md) · [FFmpeg](https://ffmpeg.org/) · [Android MediaCodecList](https://developer.android.com/reference/android/media/MediaCodecList)
 
+
+## Official VideoLAN LibVLC companion (Codec SDK 0.2.0)
+
+The release workflow now supports two AARs together: the existing Android FFmpeg
+Codec AAR and the **official VideoLAN LibVLC AAR** from Maven Central (stable
+LibVLC 3.7.7 at implementation). It also produces one downloadable ZIP bundle
+containing the two unmodified, independently consumable AARs plus a Maven POM,
+checksum provenance and integration instructions.
+
+LibVLC itself is **not compiled from source in this project**: GitHub Actions
+downloads VideoLAN's published AAR, checks its official Maven checksum (SHA-1 for 3.7.7), records SHA-256, verifies Java/native
+ABIs and 16 KiB ELF alignment, and distributes it unchanged. **All project
+builds, tests, packaging and publishing run exclusively on GitHub-hosted
+runners**; no NAS/remote build server is used.
+
+[LibVLC + FFmpeg integration guide](docs/LIBVLC_INTEGRATION.md).
+For Gradle, the recommended usage is a local FFmpeg AAR plus
+implementation("org.videolan.android:libvlc-all:3.7.7"), so Maven resolves
+LibVLC's transitive dependencies. The bundle ZIP also includes an offline
+LibVLC AAR and its POM. Both AARs must be app build dependencies; a ZIP or AAR
+cannot be installed independently as an Android APK.
+
+
 Android playback SDK packaged as an **AAR** (not a standalone APK). It exposes:
 
 - The installed Android device hardware/software media decoder inventory (`MediaCodecList`), including decoder names and MIME types.
@@ -14,14 +37,14 @@ Android playback SDK packaged as an **AAR** (not a standalone APK). It exposes:
 
 ## Automatic update schedule
 
-GitHub Actions performs a **lightweight update check at 05:00 every day in Asia/Seoul**. The schedule is UTC 20:00 on the preceding date (cron: 0 20 * * *). Scheduled jobs can start later if GitHub Actions is congested.
+GitHub Actions performs a **lightweight FFmpeg and LibVLC update check at 05:00 every day in Asia/Seoul**. The schedule is UTC 20:00 on the preceding date (cron: 0 20 * * *). Scheduled jobs can start later if GitHub Actions is congested.
 
-1. Query upstream FFmpeg git tags, accept only numbered stable nX.Y or nX.Y.Z releases (exclude RC/beta/development tags), and select the highest semantic version.
-2. Compare the target GitHub Release with the required AAR, verification report, SHA-256 file, build information, and corresponding FFmpeg source.
-3. If the matching Release is already complete, **skip all four native builds, AAR packaging, and publishing**. The update-check job alone succeeds and records SKIP.
+1. Find the latest stable FFmpeg tag and latest stable LibVLC version on Maven Central (exclude RC/beta/EAP development tags).
+2. Compare the target versioned GitHub Release with required FFmpeg AAR, official LibVLC AAR/POM, ZIP bundle, checksum, verification report, provenance and FFmpeg source.
+3. If both versions are already bundled in a complete Release, **skip all four native builds, AAR packaging, and publishing**. The update-check job alone succeeds and records SKIP.
 4. Otherwise build and verify arm64-v8a, armeabi-v7a, x86 and x86_64 and publish the new Release. Failed checks block publication and are retried at the next scheduled check.
 
-A push that changes actual codec sources, native build scripts or Gradle build inputs rebuilds the existing upstream version. README and workflow-only changes are skipped when the latest Release is already complete. Manual workflow runs allow an optional FFmpeg release_tag and force=true to rebuild an existing version.
+A push that changes actual codec sources, LibVLC packaging/verification scripts, native build scripts or Gradle build inputs rebuilds the existing versions. README and workflow-only changes are skipped when the latest Release is already complete. Manual workflow runs allow optional FFmpeg release_tag, LibVLC libvlc_version and force=true to rebuild an existing version.
 
 Detection errors do not silently trigger an expensive build: upstream Git or GitHub Release API failures stop the check. A new AAR still requires recompiling the consuming Android player app; this is not a hot-installable plugin.
 

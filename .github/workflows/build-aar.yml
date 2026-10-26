@@ -1,10 +1,14 @@
-name: Build Android Player Codec AAR (FFmpeg)
+name: Build Android Player Codec AAR (FFmpeg + LibVLC)
 
 on:
   workflow_dispatch:
     inputs:
       release_tag:
         description: 'Optional FFmpeg stable release tag (e.g. n9.0.2). Empty = newest.'
+        required: false
+        type: string
+      libvlc_version:
+        description: 'Optional stable LibVLC version (e.g. 3.7.7). Empty = newest.'
         required: false
         type: string
       force:
@@ -34,7 +38,8 @@ concurrency:
 env:
   FFMPEG_BASELINE_VERSION: '9.0.2'
   NDK_VERSION: '28.2.13676358'
-  CODEC_VERSION: '0.1.0'
+  CODEC_VERSION: '0.2.0'
+  LIBVLC_BASELINE_VERSION: '3.7.7'
 
 jobs:
   resolve:
@@ -44,6 +49,7 @@ jobs:
     outputs:
       build: ${{ steps.check.outputs.build }}
       ffmpeg_version: ${{ steps.check.outputs.ffmpeg_version }}
+      libvlc_version: ${{ steps.check.outputs.libvlc_version }}
       release_tag: ${{ steps.check.outputs.release_tag }}
     steps:
       - uses: actions/checkout@v4
@@ -56,6 +62,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           INPUT_RELEASE_TAG: ${{ inputs.release_tag }}
+          INPUT_LIBVLC_VERSION: ${{ inputs.libvlc_version }}
           FORCE_BUILD: ${{ inputs.force || 'false' }}
           GITHUB_EVENT_BEFORE: ${{ github.event.before }}
         run: python3 scripts/resolve_release.py
@@ -117,14 +124,38 @@ jobs:
           path: codec/src/main/ffmpeg-include/
           retention-days: 7
           if-no-files-found: error
+  libvlc:
+    name: Retrieve and verify official LibVLC AAR
+    needs: [resolve]
+    if: needs.resolve.outputs.build == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      LIBVLC_VERSION: ${{ needs.resolve.outputs.libvlc_version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download official stable VideoLAN AAR and Maven POM
+        run: |
+          set -euo pipefail
+          python3 scripts/vendor_libvlc.py --version "$LIBVLC_VERSION" --output vendor
+      - name: Verify four ABIs, Java API, and 16 KiB ELF
+        run: |
+          python3 scripts/verify_libvlc.py "vendor/libvlc-all-${LIBVLC_VERSION}.aar" vendor/LIBVLC_VERIFICATION.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: libvlc-${{ env.LIBVLC_VERSION }}
+          path: vendor/
+          retention-days: 7
+          if-no-files-found: error
   aar:
     name: Package, verify, and upload AAR
-    needs: [resolve, build-native]
+    needs: [resolve, build-native, libvlc]
     if: needs.resolve.outputs.build == 'true'
     env:
       FFMPEG_VERSION: ${{ needs.resolve.outputs.ffmpeg_version }}
+      LIBVLC_VERSION: ${{ needs.resolve.outputs.libvlc_version }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -153,6 +184,10 @@ jobs:
         with:
           name: ffmpeg-headers
           path: codec/src/main/ffmpeg-include
+      - uses: actions/download-artifact@v4
+        with:
+          name: libvlc-${{ env.LIBVLC_VERSION }}
+          path: dist
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
@@ -164,16 +199,33 @@ jobs:
           done
       - name: Build release AAR
         run: gradle --no-daemon :codec:assembleRelease
-      - name: Verify AAR ABI / JNI / 16 KiB ELF
+      - name: Verify both AARs, create two-AAR bundle, and hash artifacts
         run: |
+          set -euo pipefail
           mkdir -p dist
-          cp codec/build/outputs/aar/codec-release.aar "dist/android-player-codec-${CODEC_VERSION}-ffmpeg${FFMPEG_VERSION}.aar"
-          python3 scripts/verify_aar.py "dist/android-player-codec-${CODEC_VERSION}-ffmpeg${FFMPEG_VERSION}.aar" dist/VERIFICATION.json
-          (cd dist && sha256sum *.aar > SHA256SUMS && sha256sum -c SHA256SUMS)
-          printf 'FFmpeg=%s\nCodecPack=%s\n' "$FFMPEG_VERSION" "$CODEC_VERSION" > dist/BUILD_INFO.txt
+          ffmpeg_aar="android-player-codec-${CODEC_VERSION}-ffmpeg${FFMPEG_VERSION}.aar"
+          libvlc_aar="libvlc-all-${LIBVLC_VERSION}.aar"
+          cp codec/build/outputs/aar/codec-release.aar "dist/$ffmpeg_aar"
+          python3 scripts/verify_aar.py "dist/$ffmpeg_aar" dist/FFMPEG_VERIFICATION.json
+          python3 scripts/verify_libvlc.py "dist/$libvlc_aar" dist/LIBVLC_VERIFICATION.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path("dist")
+          ffmpeg = json.loads((root / "FFMPEG_VERIFICATION.json").read_text())
+          ffmpeg["libvlc"] = json.loads((root / "LIBVLC_VERIFICATION.json").read_text())
+          (root / "VERIFICATION.json").write_text(json.dumps(ffmpeg, indent=2) + "\n")
+          for filename in ("FFMPEG_VERIFICATION.json", "LIBVLC_VERIFICATION.json"):
+              (root / filename).unlink()
+          PY
+          printf 'FFmpeg=%s\nLibVLC=%s\nCodecPack=%s\nLibVLC_origin=VideoLAN_Maven_Central\nGitHub_Run=%s\n' \
+            "$FFMPEG_VERSION" "$LIBVLC_VERSION" "$CODEC_VERSION" "$GITHUB_RUN_ID" > dist/BUILD_INFO.txt
+          python3 scripts/package_bundle.py --dist dist --codec "$CODEC_VERSION" \
+            --ffmpeg "$FFMPEG_VERSION" --libvlc "$LIBVLC_VERSION"
+          (cd dist && find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%f\n' | sort | xargs sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
-          name: android-player-codec-${{ env.CODEC_VERSION }}-ffmpeg${{ env.FFMPEG_VERSION }}
+          name: android-player-codec-${{ env.CODEC_VERSION }}-ffmpeg${{ env.FFMPEG_VERSION }}-libvlc${{ env.LIBVLC_VERSION }}
           path: dist/
           if-no-files-found: error
           retention-days: 30
@@ -183,13 +235,14 @@ jobs:
     needs: [resolve, aar]
     env:
       FFMPEG_VERSION: ${{ needs.resolve.outputs.ffmpeg_version }}
+      LIBVLC_VERSION: ${{ needs.resolve.outputs.libvlc_version }}
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: android-player-codec-${{ env.CODEC_VERSION }}-ffmpeg${{ env.FFMPEG_VERSION }}
+          name: android-player-codec-${{ env.CODEC_VERSION }}-ffmpeg${{ env.FFMPEG_VERSION }}-libvlc${{ env.LIBVLC_VERSION }}
           path: dist
       - name: Ship the exact LGPL FFmpeg sources
         run: |
@@ -198,18 +251,18 @@ jobs:
             https://github.com/FFmpeg/FFmpeg.git ffmpeg-source
           git -C ffmpeg-source archive --format=tar.gz --prefix="ffmpeg-${FFMPEG_VERSION}/" \
             HEAD > "dist/FFmpeg-source-${FFMPEG_VERSION}.tar.gz"
-          (cd dist && sha256sum -c SHA256SUMS)
+          (cd dist && find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%f\n' | sort | xargs sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
       - name: Publish versioned release assets
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          tag="codec-v${CODEC_VERSION}-ffmpeg${FFMPEG_VERSION}"
+          tag="codec-v${CODEC_VERSION}-ffmpeg${FFMPEG_VERSION}-libvlc${LIBVLC_VERSION}"
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" dist/* --clobber
           else
             gh release create "$tag" dist/* \
-              --title "Android Player Codec ${CODEC_VERSION} / FFmpeg ${FFMPEG_VERSION}" \
-              --notes 'LGPL-only FFmpeg decoder pack; includes Native AAR, all four ABIs, 16 KiB alignment report, FFmpeg source and checksum. Requires Android app rebuild to integrate. No DRM support.'
+              --title "Android Codec ${CODEC_VERSION} / FFmpeg ${FFMPEG_VERSION} / LibVLC ${LIBVLC_VERSION}" \
+              --notes 'Two-AAR codec bundle: FFmpeg AAR compiled on GitHub-hosted runners, official VideoLAN LibVLC AAR retrieved unchanged from Maven Central and checksum-verified. All four ABIs and 16 KiB ELF checked; FFmpeg source, LibVLC POM/provenance and SHA256 included. Not a merged AAR or independently installable APK. LGPL and third-party licensing applies; no DRM guarantee.'
           fi
