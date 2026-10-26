@@ -5,10 +5,12 @@
 
 ## Official VideoLAN LibVLC companion (Codec SDK 0.2.0)
 
+**Verified GitHub Release:** [FFmpeg + LibVLC bundle ZIP](https://github.com/enaskr/android_player_codec/releases/download/codec-v0.2.0-ffmpeg9.0.2-libvlc3.7.7/android-player-codec-bundle-0.2.0-ffmpeg9.0.2-libvlc3.7.7.zip) · [Release notes](https://github.com/enaskr/android_player_codec/releases/tag/codec-v0.2.0-ffmpeg9.0.2-libvlc3.7.7) · [Verification report](https://github.com/enaskr/android_player_codec/releases/download/codec-v0.2.0-ffmpeg9.0.2-libvlc3.7.7/VERIFICATION.json). All release builds ran on GitHub-hosted runners; runtime device playback remains untested.
+
 The release workflow now supports two AARs together: the existing Android FFmpeg
 Codec AAR and the **official VideoLAN LibVLC AAR** from Maven Central (stable
 LibVLC 3.7.7 at implementation). It also produces one downloadable ZIP bundle
-containing the two unmodified, independently consumable AARs plus a Maven POM,
+containing two independently consumable AARs (official LibVLC unchanged) plus a Maven POM,
 checksum provenance and integration instructions.
 
 LibVLC itself is **not compiled from source in this project**: GitHub Actions
