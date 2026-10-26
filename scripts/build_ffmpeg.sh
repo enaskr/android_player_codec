@@ -17,14 +17,14 @@ if ! command -v patchelf >/dev/null; then
   echo 'patchelf is required to normalize Android .so SONAMEs' >&2; exit 1
 fi
 TOOL="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
-# FFmpeg's 32-bit x86 standalone assembly can emit R_386_32 relocations,
-# which Android's PIC shared linker rejects. Keep all software decoders but
-# disable only this non-PIC assembly path for the x86 ABI.
+# FFmpeg's 32-bit x86 standalone AND inline assembly can produce R_386_32
+# relocations. Android requires PIC shared libraries. Disable assembler
+# optimizations only for x86 while retaining portable decoder implementations.
 ARCH_CONFIGURE=()
 case "$ABI" in
   arm64-v8a) ARCH=aarch64; CPU=armv8-a; TARGET="aarch64-linux-android" ;;
   armeabi-v7a) ARCH=arm; CPU=armv7-a; TARGET="armv7a-linux-androideabi" ;;
-  x86) ARCH=x86; CPU=i686; TARGET="i686-linux-android"; ARCH_CONFIGURE+=(--disable-x86asm) ;;
+  x86) ARCH=x86; CPU=i686; TARGET="i686-linux-android"; ARCH_CONFIGURE+=(--disable-asm) ;;
   x86_64) ARCH=x86_64; CPU=x86-64; TARGET="x86_64-linux-android" ;;
   *) echo "Unsupported ABI: $ABI" >&2; exit 1 ;;
 esac
