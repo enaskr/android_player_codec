@@ -1,0 +1,38 @@
+name: Probe official LibVLC AAR native contents (temporary)
+on:
+  push:
+    branches: [feature/libvlc-primary-single-aar]
+    paths: [.github/workflows/probe-libvlc.yml]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download pinned upstream AAR
+        run: python3 scripts/vendor_libvlc.py --version 3.7.7 --output vendor
+      - name: Native and Android AAR structure inventory
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import io, zipfile, collections
+          p="vendor/libvlc-all-3.7.7.aar"
+          with zipfile.ZipFile(p) as z:
+              names=z.namelist()
+              print("UPSTREAM_MANIFEST")
+              manifest=z.read("AndroidManifest.xml")
+              print(manifest[:1700].decode("utf-8","replace"))
+              print("UPSTREAM_TOP_LEVEL",[(n, len(z.read(n))) for n in names if "/" not in n][:30])
+              for abi in ["arm64-v8a","armeabi-v7a","x86","x86_64"]:
+                  libs=[(n,len(z.read(n))) for n in names if n.startswith("jni/"+abi+"/") and n.endswith(".so")]
+                  print("NATIVE_LIBRARIES",abi,len(libs), libs[:65])
+              with zipfile.ZipFile(io.BytesIO(z.read("classes.jar"))) as classes:
+                  src=classes.namelist()
+                  print("JAVA_CLASS_COUNT",len(src))
+                  print("JAVA_SAMPLE",src[:30])
+              print("RES_COUNT",len([x for x in names if x.startswith("res/")]))
+              print("EXTERNAL_JARS",[x for x in names if x.startswith("libs/") and x.endswith(".jar")])
+              print("AAR_ENTRIES",len(names))
+          PY
