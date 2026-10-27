@@ -141,7 +141,7 @@ def merge(vlc: Path, addon: Path, output: Path, metadata: dict | None = None) ->
             for name in addon_names:
                 if name.startswith("jni/") and name.endswith(".so"):
                     target.writestr(name, extension.read(name), compress_type=zipfile.ZIP_STORED)
-            proguard = addon.read("proguard.txt") if "proguard.txt" in addon_names else b""
+            proguard = extension.read("proguard.txt") if "proguard.txt" in addon_names else b""
             if proguard:
                 if "proguard.txt" in base_names:
                     text = base.read("proguard.txt").rstrip(b"\n") + b"\n" + proguard
