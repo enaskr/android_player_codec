@@ -44,6 +44,6 @@ jobs:
         run: |
           git clone -q --depth=1 --branch n9.0.2 https://github.com/FFmpeg/FFmpeg.git ffmpeg
           echo SUPPLEMENTAL_CANDIDATE_DECODERS
-          ./ffmpeg/configure --list-decoders | grep -E '^(vvc|qoa|apv|jxl|jpegxl)$' || true
+          ./ffmpeg/configure --list-decoders | sed 's/^[[:space:]]*//' | grep -Ei 'vvc|qoa|apv|jxl' | head -24 || true
           echo SUPPLEMENTAL_CANDIDATE_DEMUXERS
-          ./ffmpeg/configure --list-demuxers | grep -E '^(mov|matroska|wav|ogg|mpegts|avi|qoa|apv)$' || true
+          ./ffmpeg/configure --list-demuxers | sed 's/^[[:space:]]*//' | grep -Ei 'mov|matroska|wav|ogg|mpegts|avi|qoa|apv' | head -30 || true
