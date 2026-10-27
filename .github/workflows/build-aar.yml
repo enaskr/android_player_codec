@@ -243,7 +243,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: android-player-codec-${{ env.CODEC_VERSION }}-ffmpeg${{ env.FFMPEG_VERSION }}-libvlc${{ env.LIBVLC_VERSION }}
+          name: android-codec-pack-${{ env.CODEC_VERSION }}-ffmpeg${{ env.FFMPEG_VERSION }}-libvlc${{ env.LIBVLC_VERSION }}
           path: dist
       - name: Ship the exact LGPL FFmpeg sources
         run: |
