@@ -28,6 +28,29 @@ case "$ABI" in
   x86_64) ARCH=x86_64; CPU=x86-64; TARGET="x86_64-linux-android" ;;
   *) echo "Unsupported ABI: $ABI" >&2; exit 1 ;;
 esac
+# Compile an auditable, small FFmpeg decoder supplement only when requested.
+SUPPLEMENT_ARGS=()
+if [[ "${FFMPEG_SUPPLEMENTAL_ONLY:-false}" == true ]]; then
+  policy="$ROOT/scripts/supplemental-codecs.json"
+  [[ -f "$policy" ]] || { echo "Missing $policy" >&2; exit 1; }
+  mapfile -t SUPPLEMENT_ARGS < <(python3 - "$policy" <<'PY'
+import json, sys
+policy=json.load(open(sys.argv[1], encoding="utf-8"))
+decoders=[item["name"] for item in policy["decoders"]]
+demuxers=policy["demuxers"]
+if not decoders or not demuxers or len(set(decoders)) != len(decoders):
+    raise SystemExit("Invalid supplemental FFmpeg decoder policy")
+for group in (decoders,demuxers):
+    if any(not word.replace("_","").isalnum() for word in group):
+        raise SystemExit("Invalid native codec name")
+print("--disable-decoders")
+print("--enable-decoder=" + ",".join(decoders))
+print("--disable-demuxers")
+print("--enable-demuxer=" + ",".join(demuxers))
+PY
+  )
+  echo "Building restricted supplemental FFmpeg decoders from $policy"
+fi
 WORK="$ROOT/work/build-$ABI"
 PREFIX="$ROOT/work/install-$ABI"
 mkdir -p "$WORK" "$PREFIX"
@@ -49,6 +72,7 @@ cd "$WORK"
   --disable-vulkan --disable-gpl --disable-nonfree \
   --enable-pthreads --disable-symver \
   "${ARCH_CONFIGURE[@]}" \
+  "${SUPPLEMENT_ARGS[@]}" \
   --extra-cflags='-fPIC' \
   --extra-ldflags='-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384' \
   ${FFMPEG_EXTRA_CONFIGURE:-}
@@ -73,6 +97,18 @@ for lib in avutil swresample swscale avcodec avformat; do
     fi
   done
 done
+if [[ "${FFMPEG_SUPPLEMENTAL_ONLY:-false}" == true ]]; then
+  python3 - "$ROOT/scripts/supplemental-codecs.json" "$WORK/config_components.h" <<'PY'
+import json,re,sys
+policy=json.load(open(sys.argv[1],encoding="utf-8"))
+config=open(sys.argv[2],encoding="utf-8").read()
+for codec in policy["decoders"]:
+    key=codec["name"].upper()+"_DECODER"
+    if not re.search(r"^#define CONFIG_"+re.escape(key)+r" 1$",config,re.M):
+        raise SystemExit("Supplemental decoder was not linked: "+codec["name"])
+print("Verified selective decoder modules:", ", ".join(x["name"] for x in policy["decoders"]))
+PY
+fi
 # Header ABI is consistent across the four NDK targets; overwrite same version only.
 mkdir -p "$ROOT/codec/src/main/ffmpeg-include"
 cp -a "$PREFIX/include/." "$ROOT/codec/src/main/ffmpeg-include/"
