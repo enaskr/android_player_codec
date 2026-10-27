@@ -114,12 +114,19 @@ def merge(vlc: Path, addon: Path, output: Path, metadata: dict | None = None) ->
         # Supplement AAR must be self-contained except for its Java and native
         # files. An arbitrary Android resource merge without aapt2 is unsafe.
         allowed = {"classes.jar", "AndroidManifest.xml", "R.txt", "proguard.txt"}
+        supplement_metadata = []
         for name in addon_names:
             if name.endswith("/") or name in allowed or name.startswith("jni/"):
                 continue
             if name == "public.txt" and not extension.read(name).strip():
                 continue
+            if name == "META-INF/com/android/build/gradle/aar-metadata.properties":
+                supplement_metadata.append(name)
+                continue
             raise ValueError(f"Unexpected supplement AAR entry: {name}")
+        for name in supplement_metadata:
+            if name in base_names and base.read(name) != extension.read(name):
+                raise ValueError(f"Conflicting Gradle AAR metadata: {name}")
         report = {
             "format": "single-physical-aar",
             "primary_engine": "VideoLAN LibVLC",
@@ -143,6 +150,9 @@ def merge(vlc: Path, addon: Path, output: Path, metadata: dict | None = None) ->
             for name in addon_names:
                 if name.startswith("jni/") and name.endswith(".so"):
                     target.writestr(name, extension.read(name), compress_type=zipfile.ZIP_STORED)
+            for name in supplement_metadata:
+                if name not in base_names:
+                    target.writestr(name, extension.read(name))
             proguard = extension.read("proguard.txt") if "proguard.txt" in addon_names else b""
             if proguard:
                 if "proguard.txt" in base_names:
