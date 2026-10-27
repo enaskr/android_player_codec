@@ -38,3 +38,11 @@ android {
         }
     }
 }
+
+ 
+// Use the official VideoLAN AAR for compile-time API signatures only.
+// The final distribution is assembled from the unchanged original LibVLC AAR
+// plus this module's own Java/JNI output; no nested AAR dependency is packaged.
+dependencies {
+    compileOnly("org.videolan.android:libvlc-all:${providers.gradleProperty("libvlcVersion").orElse("3.7.7").get()}")
+}
