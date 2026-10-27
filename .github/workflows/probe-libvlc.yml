@@ -35,4 +35,15 @@ jobs:
               print("RES_COUNT",len([x for x in names if x.startswith("res/")]))
               print("EXTERNAL_JARS",[x for x in names if x.startswith("libs/") and x.endswith(".jar")])
               print("AAR_ENTRIES",len(names))
+              native=z.read("jni/arm64-v8a/libvlc.so")
+              for candidate in ("vvc","qoa","apv","h264","hevc","avcodec"):
+                  print("LIBVLC_BINARY_STRING_HINT",candidate,native.count(candidate.encode()))
           PY
+
+      - name: List candidate codecs supported by FFmpeg source
+        run: |
+          git clone -q --depth=1 --branch n9.0.2 https://github.com/FFmpeg/FFmpeg.git ffmpeg
+          echo SUPPLEMENTAL_CANDIDATE_DECODERS
+          ./ffmpeg/configure --list-decoders | grep -E '^(vvc|qoa|apv|jxl|jpegxl)$' || true
+          echo SUPPLEMENTAL_CANDIDATE_DEMUXERS
+          ./ffmpeg/configure --list-demuxers | grep -E '^(mov|matroska|wav|ogg|mpegts|avi|qoa|apv)$' || true
