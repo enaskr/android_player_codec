@@ -1,4 +1,20 @@
-# Build verification (2026-10-26)
+# Current single-AAR Release v0.3.0 (2026-10-27)
+
+- Architecture: **LibVLC 3.7.7 primary engine + selective FFmpeg 9.0.2 decoder candidates (VVC, APV, QOA)**.
+- **One single Android AAR:** android-player-codec-pack-0.3.0-ffmpeg9.0.2-libvlc3.7.7.aar (115,587,624 bytes).
+- Release: https://github.com/enaskr/android_player_codec/releases/tag/codec-v0.3.0-ffmpeg9.0.2-libvlc3.7.7
+- GitHub-hosted-only Action run: https://github.com/enaskr/android_player_codec/actions/runs/40428226719 — **success**.
+- Official LibVLC 3.7.7 Java classes, Android manifest/resources and native libraries preserved in the unified AAR and checked against original bytes.
+- All four selective FFmpeg ABIs (arm64-v8a, armeabi-v7a, x86, x86_64): build, Java/JNI symbol checks and 16 KiB PT_LOAD ELF validation passed.
+- Official LibVLC ABI files validated, with strict 16 KiB ELF required for arm64-v8a; x86_64 upstream also aligned. VideoLAN's arm32/x86 include 4 KiB PT_LOAD segments and are not claimed 16 KiB-compatible.
+- GitHub Actions Release includes SHA256SUMS, MERGE_INFO.json, VERIFICATION.json, LIBVLC_PROVENANCE.json, official POM, selected codec policy, matching FFmpeg source and integration guide.
+- These FFmpeg codec names are **curated candidates**, not a verified complete set of decoders missing from LibVLC's monolithic libvlc.so.
+- Android physical-device playback, seamless FFmpeg renderer handoff, DRM compatibility and full third-party legal compliance: **not verified**.
+- Daily 05:00 Asia/Seoul conditional update check is retained.
+
+## Historical releases
+
+### Original FFmpeg AAR (2026-10-26)
 
 - FFmpeg: 9.0.2, LGPL decoder/demuxer build; GPL/nonfree modules excluded.
 - ARM64 configuration: 477 enabled software decoders and 355 enabled demuxers.
