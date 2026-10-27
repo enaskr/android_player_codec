@@ -30,7 +30,10 @@ BUILD_INPUTS = (
     "scripts/verify_aar.py",
     "scripts/verify_libvlc.py",
     "scripts/vendor_libvlc.py",
-    "scripts/package_bundle.py",
+    "scripts/merge_aar.py",
+    "scripts/verify_unified_aar.py",
+    "scripts/supplemental-codecs.json",
+    "codec/src/main/java/com/enaskr/player/codec/LibVlcCodecPack.java",
     "scripts/resolve_release.py",
     "build.gradle.kts",
     "settings.gradle.kts",
@@ -97,13 +100,13 @@ def release_tag(codec_version: str, ffmpeg: str, libvlc: str) -> str:
 
 def required_assets(codec_version: str, ffmpeg: str, libvlc: str) -> set[str]:
     return {
-        f"android-player-codec-{codec_version}-ffmpeg{ffmpeg}.aar",
-        f"libvlc-all-{libvlc}.aar",
+        f"android-player-codec-pack-{codec_version}-ffmpeg{ffmpeg}-libvlc{libvlc}.aar",
         f"libvlc-all-{libvlc}.pom",
-        f"android-player-codec-bundle-{codec_version}-ffmpeg{ffmpeg}-libvlc{libvlc}.zip",
         f"FFmpeg-source-{ffmpeg}.tar.gz",
         "LIBVLC_PROVENANCE.json",
-        "README-BUNDLE.md",
+        "SUPPLEMENTAL_CODECS.json",
+        "MERGE_INFO.json",
+        "README-CODEC-PACK.md",
         "SHA256SUMS",
         "BUILD_INFO.txt",
         "VERIFICATION.json",
@@ -153,10 +156,10 @@ def decide_build(
     if force:
         return True, "manual force=true"
     if not published:
-        return True, "FFmpeg/LibVLC bundle Release missing or incomplete"
+        return True, "Unified LibVLC-first Codec Pack Release missing or incomplete"
     if event == "push" and changed:
         return True, f"codec builder changed: {', '.join(changed[:5])}"
-    return False, "all expected FFmpeg and LibVLC bundle assets already published"
+    return False, "complete single-AAR LibVLC-first Codec Pack already published"
 
 
 def run() -> int:
@@ -164,7 +167,7 @@ def run() -> int:
     if event not in ("schedule", "workflow_dispatch", "push"):
         raise ValueError(f"Unexpected event: {event}")
     repo = os.environ["GITHUB_REPOSITORY"]
-    codec_version = os.environ.get("CODEC_VERSION", "0.2.0")
+    codec_version = os.environ.get("CODEC_VERSION", "0.3.0")
     ffmpeg_baseline = os.environ.get("FFMPEG_BASELINE_VERSION", "9.0.2")
     libvlc_baseline = os.environ.get("LIBVLC_BASELINE_VERSION", "3.7.7")
     requested_ffmpeg = os.environ.get("INPUT_RELEASE_TAG", "").strip()
@@ -227,7 +230,7 @@ def run() -> int:
             for name, value in outputs.items():
                 out.write(f"{name}={value}\n")
     summary = (
-        "## FFmpeg / LibVLC update check\n\n"
+        "## Single-AAR LibVLC-first update check\n\n"
         f"- Event: {event}\n"
         f"- FFmpeg stable version: n{ffmpeg}\n"
         f"- LibVLC stable version: {libvlc}\n"
