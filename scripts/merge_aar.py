@@ -124,9 +124,16 @@ def merge(vlc: Path, addon: Path, output: Path, metadata: dict | None = None) ->
                 supplement_metadata.append(name)
                 continue
             raise ValueError(f"Unexpected supplement AAR entry: {name}")
+        # Both AARs were built with different AGP versions; the generated
+        # aar-metadata.properties is not user code and need not be identical.
+        # Preserve the original VideoLAN base metadata in the unified AAR.
+        # Record the difference for audit instead of shipping two conflicting
+        # copies with the same ZIP path.
+        addon_metadata_differences = []
         for name in supplement_metadata:
             if name in base_names and base.read(name) != extension.read(name):
-                raise ValueError(f"Conflicting Gradle AAR metadata: {name}")
+                addon_metadata_differences.append(name)
+                print(f"INFO: retaining VideoLAN Gradle AAR metadata: {name}")
         report = {
             "format": "single-physical-aar",
             "primary_engine": "VideoLAN LibVLC",
@@ -138,6 +145,8 @@ def merge(vlc: Path, addon: Path, output: Path, metadata: dict | None = None) ->
             "libvlc_resources_preserved": True,
             "separate_nested_aars": False,
             "supplemental_jni_entries": ffmpeg_native,
+            "videoLAN_aar_metadata_retained": True,
+            "supplemental_agp_metadata_differences": addon_metadata_differences,
             **java_report,
             **(metadata or {}),
         }
