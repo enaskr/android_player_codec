@@ -1,4 +1,4 @@
-name: Build Android Player Codec AAR (FFmpeg + LibVLC)
+name: Build LibVLC-first single Android Codec Pack AAR
 
 on:
   workflow_dispatch:
@@ -38,7 +38,7 @@ concurrency:
 env:
   FFMPEG_BASELINE_VERSION: '9.0.2'
   NDK_VERSION: '28.2.13676358'
-  CODEC_VERSION: '0.2.0'
+  CODEC_VERSION: '0.3.0'
   LIBVLC_BASELINE_VERSION: '3.7.7'
 
 jobs:
@@ -71,7 +71,8 @@ jobs:
     if: needs.resolve.outputs.build == 'true'
     env:
       FFMPEG_VERSION: ${{ needs.resolve.outputs.ffmpeg_version }}
-    name: FFmpeg ${{ matrix.abi }}
+      FFMPEG_SUPPLEMENTAL_ONLY: 'true'
+    name: Selective FFmpeg ${{ matrix.abi }}
     strategy:
       fail-fast: false
       matrix:
@@ -148,7 +149,7 @@ jobs:
           retention-days: 7
           if-no-files-found: error
   aar:
-    name: Package, verify, and upload AAR
+    name: Merge and verify LibVLC-first single AAR
     needs: [resolve, build-native, libvlc]
     if: needs.resolve.outputs.build == 'true'
     env:
@@ -197,40 +198,40 @@ jobs:
           for abi in arm64-v8a armeabi-v7a x86 x86_64; do
             python3 scripts/verify_shared_libs.py "codec/src/main/jniLibs/$abi" "$abi"
           done
-      - name: Build release AAR
-        run: gradle --no-daemon :codec:assembleRelease
-      - name: Verify both AARs, create two-AAR bundle, and hash artifacts
+      - name: Build selective FFmpeg fallback Java/JNI AAR
+        run: gradle --no-daemon :codec:assembleRelease -PlibvlcVersion="$LIBVLC_VERSION"
+      - name: Assemble and validate single LibVLC-primary Codec Pack AAR
+        shell: bash
         run: |
           set -euo pipefail
           mkdir -p dist
-          ffmpeg_aar="android-player-codec-${CODEC_VERSION}-ffmpeg${FFMPEG_VERSION}.aar"
-          libvlc_aar="libvlc-all-${LIBVLC_VERSION}.aar"
-          cp codec/build/outputs/aar/codec-release.aar "dist/$ffmpeg_aar"
-          python3 scripts/verify_aar.py "dist/$ffmpeg_aar" dist/FFMPEG_VERIFICATION.json
-          python3 scripts/verify_libvlc.py "dist/$libvlc_aar" dist/LIBVLC_VERIFICATION.json
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-          root = Path("dist")
-          ffmpeg = json.loads((root / "FFMPEG_VERIFICATION.json").read_text())
-          ffmpeg["libvlc"] = json.loads((root / "LIBVLC_VERIFICATION.json").read_text())
-          (root / "VERIFICATION.json").write_text(json.dumps(ffmpeg, indent=2) + "\n")
-          for filename in ("FFMPEG_VERIFICATION.json", "LIBVLC_VERIFICATION.json"):
-              (root / filename).unlink()
-          PY
-          printf 'FFmpeg=%s\nLibVLC=%s\nCodecPack=%s\nLibVLC_origin=VideoLAN_Maven_Central\nGitHub_Run=%s\n' \
-            "$FFMPEG_VERSION" "$LIBVLC_VERSION" "$CODEC_VERSION" "$GITHUB_RUN_ID" > dist/BUILD_INFO.txt
-          python3 scripts/package_bundle.py --dist dist --codec "$CODEC_VERSION" \
-            --ffmpeg "$FFMPEG_VERSION" --libvlc "$LIBVLC_VERSION"
+          native_name="android-player-codec-pack-${CODEC_VERSION}-ffmpeg${FFMPEG_VERSION}-libvlc${LIBVLC_VERSION}.aar"
+          addon="codec/build/outputs/aar/codec-release.aar"
+          vlc="dist/libvlc-all-${LIBVLC_VERSION}.aar"
+          # Reject publishing if the embedded LibVLC original or the
+          # standalone FFmpeg native/JNI output fails its own checks.
+          python3 scripts/verify_aar.py "$addon" dist/FFMPEG_EXTENSION_VERIFICATION.json
+          python3 scripts/verify_libvlc.py "$vlc" dist/LIBVLC_VERIFICATION.json
+          python3 scripts/merge_aar.py --libvlc "$vlc" --ffmpeg "$addon" \
+            --metadata scripts/supplemental-codecs.json --output "dist/$native_name"
+          mv "dist/${native_name%.aar}.merge.json" dist/MERGE_INFO.json
+          python3 scripts/verify_unified_aar.py --aar "dist/$native_name" \
+            --libvlc "$vlc" --ffmpeg "$addon" --report dist/VERIFICATION.json
+          cp scripts/supplemental-codecs.json dist/SUPPLEMENTAL_CODECS.json
+          cp docs/SINGLE_AAR_KO.md dist/README-CODEC-PACK.md
+          printf 'CodecPack=%s\nPrimary=LibVLC\nLibVLC=%s\nFFmpeg=%s\nSupplemental=vvc,apv,qoa\nRunner=GitHub-hosted\nGitHub_Run=%s\n' \
+            "$CODEC_VERSION" "$LIBVLC_VERSION" "$FFMPEG_VERSION" "$GITHUB_RUN_ID" > dist/BUILD_INFO.txt
+          # Ship ONE AAR. Keep Maven POM/provenance/verification as metadata.
+          rm "$vlc" dist/FFMPEG_EXTENSION_VERIFICATION.json dist/LIBVLC_VERIFICATION.json
           (cd dist && find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%f\n' | sort | xargs sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
-          name: android-player-codec-${{ env.CODEC_VERSION }}-ffmpeg${{ env.FFMPEG_VERSION }}-libvlc${{ env.LIBVLC_VERSION }}
+          name: android-codec-pack-${{ env.CODEC_VERSION }}-ffmpeg${{ env.FFMPEG_VERSION }}-libvlc${{ env.LIBVLC_VERSION }}
           path: dist/
           if-no-files-found: error
           retention-days: 30
   publish:
-    name: Publish verified AAR
+    name: Publish verified single Codec Pack AAR
     if: needs.resolve.outputs.build == 'true'
     needs: [resolve, aar]
     env:
@@ -261,8 +262,9 @@ jobs:
           tag="codec-v${CODEC_VERSION}-ffmpeg${FFMPEG_VERSION}-libvlc${LIBVLC_VERSION}"
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" dist/* --clobber
+            gh release edit "$tag" --notes 'LibVLC-first single AAR. VideoLAN original Java/native/resources retained, selectively built FFmpeg VVC/APV/QOA fallback candidates merged. Supplement codecs are NOT proven universally absent from LibVLC. GitHub-hosted-only build, JNI and ELF validation; Android device runtime not tested.'
           else
             gh release create "$tag" dist/* \
-              --title "Android Codec ${CODEC_VERSION} / FFmpeg ${FFMPEG_VERSION} / LibVLC ${LIBVLC_VERSION}" \
-              --notes 'Two-AAR codec bundle: FFmpeg AAR compiled on GitHub-hosted runners, official VideoLAN LibVLC AAR retrieved unchanged from Maven Central and checksum-verified. Four ABI presence/architecture checks; strict 16 KiB on FFmpeg and LibVLC ARM64; FFmpeg source, LibVLC POM/provenance and SHA256 included. Not a merged AAR or independently installable APK. LGPL and third-party licensing applies; no DRM guarantee.'
+              --title "Single Android Codec Pack ${CODEC_VERSION} (LibVLC ${LIBVLC_VERSION} + selective FFmpeg)" \
+              --notes 'One physical LibVLC-primary AAR containing original VideoLAN classes/resources/native binaries plus limited FFmpeg VVC/APV/QOA fallback decoder candidates. Actual LibVLC codec-delta is not provable from monolithic upstream binary; fallback is opt-in. All build steps run on GitHub-hosted Ubuntu, validated JNI/ELF, LGPL source and checksums supplied. Device playback/DRM compatibility untested.'
           fi
