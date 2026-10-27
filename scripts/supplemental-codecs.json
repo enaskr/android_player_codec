@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "primary": "LibVLC",
+  "mode": "explicit_supplemental_candidates",
+  "important": "VideoLAN's monolithic libvlc.so has no authoritative machine-readable list of decoders shipped. These are deliberately selected newer/rare codec candidates, NOT a proven complete set of absent LibVLC decoders. Runtime fallback must only activate after LibVLC cannot decode.",
+  "decoders": [
+    {
+      "name": "vvc",
+      "type": "video",
+      "description": "H.266 / Versatile Video Coding",
+      "confirmed_missing_in_libvlc": false
+    },
+    {
+      "name": "apv",
+      "type": "video",
+      "description": "Advanced Professional Video",
+      "confirmed_missing_in_libvlc": false
+    },
+    {
+      "name": "qoa",
+      "type": "audio",
+      "description": "Quite OK Audio",
+      "confirmed_missing_in_libvlc": false
+    }
+  ],
+  "demuxers": [
+    "mov",
+    "matroska",
+    "avi",
+    "mpegts",
+    "ogg",
+    "wav",
+    "qoa",
+    "apv"
+  ],
+  "actual_support_requires_runtime_probe": true,
+  "comparison_reference": "https://code.videolan.org/videolan/vlc",
+  "licensing": "FFmpeg LGPL; GPL/nonfree options disabled"
+}
