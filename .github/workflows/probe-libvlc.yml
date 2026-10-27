@@ -2,7 +2,12 @@ name: Probe official LibVLC AAR native contents (temporary)
 on:
   push:
     branches: [feature/libvlc-primary-single-aar]
-    paths: [.github/workflows/probe-libvlc.yml]
+    paths:
+      - '.github/workflows/probe-libvlc.yml'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'codec/**'
+      - '.github/workflows/build-aar.yml'
 permissions:
   contents: read
 jobs:
@@ -47,3 +52,15 @@ jobs:
           ./ffmpeg/configure --list-decoders | sed 's/^[[:space:]]*//' | grep -Ei 'vvc|qoa|apv|jxl' | head -24 || true
           echo SUPPLEMENTAL_CANDIDATE_DEMUXERS
           ./ffmpeg/configure --list-demuxers | sed 's/^[[:space:]]*//' | grep -Ei 'mov|matroska|wav|ogg|mpegts|avi|qoa|apv' | head -30 || true
+
+      - name: Regression tests for single AAR merger
+        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Compile LibVLC-primary Java API against official Maven dependency
+        run: gradle --no-daemon :codec:compileReleaseJavaWithJavac -PlibvlcVersion=3.7.7
