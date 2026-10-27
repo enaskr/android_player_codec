@@ -64,9 +64,10 @@ class ReleaseResolutionTests(unittest.TestCase):
             resolver.version_tuple("9.1-rc1")
 
     def test_release_asset_completeness(self):
-        assets = resolver.required_assets("0.2.0", "9.0.2", "3.7.7")
+        assets = resolver.required_assets("0.3.0", "9.0.2", "3.7.7")
         self.assertEqual(len(assets), 10)
-        self.assertIn("libvlc-all-3.7.7.aar", assets)
+        self.assertNotIn("libvlc-all-3.7.7.aar", assets)
+        self.assertIn("SUPPLEMENTAL_CODECS.json", assets)
         self.assertIn("android-player-codec-bundle-0.2.0-ffmpeg9.0.2-libvlc3.7.7.zip", assets)
         self.assertIn("FFmpeg-source-9.0.2.tar.gz", assets)
 
