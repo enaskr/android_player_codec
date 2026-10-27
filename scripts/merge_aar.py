@@ -70,11 +70,13 @@ def merged_classes(vlc: bytes, extension: bytes) -> tuple[bytes, dict]:
         missing = sorted(set(JAVA_ENTRYPOINTS) - copied)
         if missing:
             raise ValueError(f"Merged classes.jar is missing entrypoints: {missing}")
-        return out.getvalue(), {
+        report = {
             "videolan_jar_entries": len(base_items),
             "addon_jar_entries": len(addon_items),
             "merged_jar_entries": len(copied),
         }
+    # Flush ZIP central directory before collecting the bytes.
+    return out.getvalue(), report
 
 
 def merge(vlc: Path, addon: Path, output: Path, metadata: dict | None = None) -> dict:
