@@ -68,7 +68,7 @@ class ReleaseResolutionTests(unittest.TestCase):
         self.assertEqual(len(assets), 10)
         self.assertNotIn("libvlc-all-3.7.7.aar", assets)
         self.assertIn("SUPPLEMENTAL_CODECS.json", assets)
-        self.assertIn("android-player-codec-bundle-0.2.0-ffmpeg9.0.2-libvlc3.7.7.zip", assets)
+        self.assertIn("android-player-codec-pack-0.3.0-ffmpeg9.0.2-libvlc3.7.7.aar", assets)
         self.assertIn("FFmpeg-source-9.0.2.tar.gz", assets)
 
     def test_release_tag_includes_both_engine_versions(self):
